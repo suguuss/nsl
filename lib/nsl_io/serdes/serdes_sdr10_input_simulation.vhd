@@ -11,6 +11,8 @@ entity serdes_sdr10_input is
     word_clock_i : in std_ulogic;
     reset_n_i : in std_ulogic;
 
+    serdes_strobe_i : in std_ulogic := '0';
+
     serial_i : in std_ulogic;
     parallel_o : out std_ulogic_vector(0 to 9);
 

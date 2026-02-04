@@ -14,6 +14,8 @@ entity serdes_sdr10_input is
         word_clock_i    : in std_ulogic;
         reset_n_i       : in std_ulogic;
 
+        serdes_strobe_i : in std_ulogic := '0';
+
         serial_i   : in  std_ulogic;
         parallel_o : out std_ulogic_vector(0 to 9);
 
@@ -24,17 +26,15 @@ end entity;
 
 architecture series6 of serdes_sdr10_input is
 
-    signal bit_clock_s : std_ulogic;
-    signal reset_s     : std_ulogic;
+    signal reset_s : std_ulogic;
 
     signal cascade     : std_ulogic;
     signal d_word_sync : std_ulogic_vector(0 to 9);
     signal d           : std_ulogic_vector(0 to 9);
     signal slip_count  : integer range 0 to 9;
 
-    signal serdes_strobe_s : std_logic;
-    signal mark_s          : std_ulogic;
-    signal old_mark_s      : std_ulogic;
+    signal mark_s     : std_ulogic;
+    signal old_mark_s : std_ulogic;
 
     signal invert_s      : boolean;
     signal high_nlow_s   : boolean;
@@ -55,21 +55,22 @@ begin
         end if;
     end process;
 
-    slip_tracker : process (gearbox_clock_i, reset_n_i) is
+    slip_tracker : process (gearbox_clock_i) is
     begin
         if rising_edge(gearbox_clock_i) then
-            if bitslip_i = '1' then
-                if slip_count = 0 then
-                    slip_count <= 9;
-                else
-                    slip_count <= slip_count - 1;
+            if reset_n_i = '0' then
+                slip_count <= 9;
+            else
+                if bitslip_i = '1' then
+                    if slip_count = 0 then
+                        slip_count <= 9;
+                    else
+                        slip_count <= slip_count - 1;
+                    end if;
                 end if;
             end if;
         end if;
 
-        if reset_n_i = '0' then
-            slip_count <= 9;
-        end if;
     end process;
 
     mark_s <= '1' when slip_count = 0 else
@@ -77,18 +78,6 @@ begin
     mark_o <= mark_s;
 
     invert_s <= slip_count >= 5;
-
-    BUFPLL_inst : unisim.vcomponents.BUFPLL
-    generic map(
-        DIVIDE => 5
-    )
-    port map(
-        PLLIN        => bit_clock_i,
-        GCLK         => gearbox_clock_i,
-        SERDESSTROBE => serdes_strobe_s,
-        LOCKED       => reset_n_i,
-        IOCLK        => bit_clock_s
-    );
 
     master : unisim.vcomponents.ISERDES2
     generic map(
@@ -100,7 +89,7 @@ begin
     )
     port map(
         CE0    => '1',
-        CLK0   => bit_clock_s,
+        CLK0   => bit_clock_i,
         CLK1   => '0',
         CLKDIV => gearbox_clock_i,
         RST    => reset_s,
@@ -113,7 +102,7 @@ begin
         SHIFTOUT => cascade,
 
         BITSLIP => bitslip_i,
-        IOCE    => serdes_strobe_s,
+        IOCE    => serdes_strobe_i,
         SHIFTIN => '0'
     );
 
@@ -127,7 +116,7 @@ begin
     )
     port map(
         CE0    => '1',
-        CLK0   => bit_clock_s,
+        CLK0   => bit_clock_i,
         CLK1   => '0',
         CLKDIV => gearbox_clock_i,
         RST    => reset_s,
@@ -136,36 +125,36 @@ begin
 
         D       => serial_i,
         BITSLIP => bitslip_i,
-        IOCE    => serdes_strobe_s,
+        IOCE    => serdes_strobe_i,
         SHIFTIN => cascade
     );
 
-    gearbox_proc : process (gearbox_clock_i, reset_n_i)
+    gearbox_proc : process (gearbox_clock_i)
     begin
         if rising_edge(gearbox_clock_i) then
-            if high_nlow_s then
-                gearbox_reg_s <= parallel_s;
+            if reset_n_i = '0' then
+                high_nlow_s <= true;
+                old_mark_s  <= mark_s;
             else
-                if not invert_s then
-                    d <= gearbox_reg_s & parallel_s;
+                if high_nlow_s then
+                    gearbox_reg_s <= parallel_s;
                 else
-                    d <= parallel_s & gearbox_reg_s;
+                    if not invert_s then
+                        d <= gearbox_reg_s & parallel_s;
+                    else
+                        d <= parallel_s & gearbox_reg_s;
+                    end if;
+                end if;
+
+                old_mark_s <= mark_s;
+                if not (mark_s = '1' and old_mark_s = '0') then
+                    high_nlow_s <= not high_nlow_s;
                 end if;
             end if;
-
-            old_mark_s <= mark_s;
-            if not (mark_s = '1' and old_mark_s = '0') then
-                high_nlow_s <= not high_nlow_s;
-            end if;
-        end if;
-
-        if reset_n_i = '0' then
-            high_nlow_s <= true;
-            old_mark_s  <= mark_s;
         end if;
     end process;
 
-    word_proc : process (word_clock_i, reset_n_i)
+    word_proc : process (word_clock_i)
     begin
         if rising_edge(word_clock_i) then
             d_word_sync <= d;

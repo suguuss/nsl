@@ -7,8 +7,12 @@ entity serdes_sdr10_output is
     );
   port(
     bit_clock_i : in std_ulogic;
+    gearbox_clock_i : in std_ulogic := '0';
     word_clock_i : in std_ulogic;
     reset_n_i : in std_ulogic;
+
+    serdes_strobe_i : in std_ulogic := '0';
+
     parallel_i : in std_ulogic_vector(0 to 9);
     serial_o : out std_ulogic
     );
@@ -18,7 +22,6 @@ architecture simulation of serdes_sdr10_output is
 
   signal d: std_ulogic_vector(0 to 9);
   signal shreg: std_ulogic_vector(0 to 9);
-  signal on_fall: std_ulogic;
   signal ctr: integer range 0 to 9;
 
 begin

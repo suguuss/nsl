@@ -8,42 +8,27 @@ entity serdes_sdr10_output is
         left_to_right_c : boolean := false
     );
     port (
-        bit_clock_i     : in  std_ulogic;
-        gearbox_clock_i : in  std_ulogic;
-        word_clock_i    : in  std_ulogic;
-        reset_n_i       : in  std_ulogic;
-        parallel_i      : in  std_ulogic_vector(0 to 9);
-        serial_o        : out std_ulogic
+        bit_clock_i     : in std_ulogic;
+        gearbox_clock_i : in std_ulogic := '0';
+        word_clock_i    : in std_ulogic;
+        reset_n_i       : in std_ulogic;
+
+        serdes_strobe_i : in std_ulogic := '0';
+
+        parallel_i : in  std_ulogic_vector(0 to 9);
+        serial_o   : out std_ulogic
     );
 end entity;
 
 architecture series6 of serdes_sdr10_output is
 
-    component BUFPLL
-        generic (
-            DIVIDE      : integer := 1;
-            ENABLE_SYNC : boolean := TRUE
-        );
-        port (
-            IOCLK        : out std_ulogic;
-            LOCK         : out std_ulogic;
-            SERDESSTROBE : out std_ulogic;
-            GCLK         : in  std_ulogic;
-            LOCKED       : in  std_ulogic;
-            PLLIN        : in  std_ulogic
-        );
-    end component;
-
-    signal bit_clock_s : std_ulogic;
-    signal reset       : std_ulogic;
-    signal d           : std_ulogic_vector(0 to 9);
+    signal reset : std_ulogic;
+    signal d     : std_ulogic_vector(0 to 9);
 
     signal cascade_do : std_ulogic;
     signal cascade_to : std_ulogic;
     signal cascade_di : std_ulogic;
     signal cascade_ti : std_ulogic;
-
-    signal serdes_strobe_s : std_ulogic;
 
     -- Gearbox: 10 bits @ 100MHz -> 2x5 bits @ 200MHz
     signal received_word_s : std_ulogic_vector(0 to 9);
@@ -94,18 +79,6 @@ begin
         end if;
     end process;
 
-    BUFPLL_inst : unisim.vcomponents.BUFPLL
-    generic map(
-        DIVIDE => 5
-    )
-    port map(
-        PLLIN        => bit_clock_i,
-        GCLK         => gearbox_clock_i,
-        SERDESSTROBE => serdes_strobe_s,
-        LOCKED       => reset_n_i,
-        IOCLK        => bit_clock_s
-    );
-
     master : unisim.vcomponents.OSERDES2
     generic map(
         DATA_WIDTH   => 5,
@@ -117,9 +90,9 @@ begin
     port map(
         OQ     => serial_o,
         OCE    => '1',
-        CLK0   => bit_clock_s,
+        CLK0   => bit_clock_i,
         CLK1   => '0',
-        IOCE   => serdes_strobe_s,
+        IOCE   => serdes_strobe_i,
         RST    => reset,
         CLKDIV => gearbox_clock_i,
 
@@ -136,15 +109,15 @@ begin
         TRAIN => '0',
         TCE   => '1',
 
-        SHIFTIN1 => '1', -- Dummy input in Master
-        SHIFTIN2 => '1', -- Dummy input in Master
+        SHIFTIN1 => '1',        -- Dummy input in Master
+        SHIFTIN2 => '1',        -- Dummy input in Master
         SHIFTIN3 => cascade_do, -- From Slave
         SHIFTIN4 => cascade_to, -- From Slave
 
         SHIFTOUT1 => cascade_di, -- To Slave
         SHIFTOUT2 => cascade_ti, -- To Slave
-        SHIFTOUT3 => open, -- Dummy output
-        SHIFTOUT4 => open -- Dummy output
+        SHIFTOUT3 => open,       -- Dummy output
+        SHIFTOUT4 => open        -- Dummy output
     );
 
     slave : unisim.vcomponents.OSERDES2
@@ -158,9 +131,9 @@ begin
     port map(
         OQ     => open,
         OCE    => '1',
-        CLK0   => bit_clock_s,
+        CLK0   => bit_clock_i,
         CLK1   => '0',
-        IOCE   => serdes_strobe_s,
+        IOCE   => serdes_strobe_i,
         RST    => reset,
         CLKDIV => gearbox_clock_i,
 
@@ -179,13 +152,13 @@ begin
 
         SHIFTIN1 => cascade_di, -- From Master
         SHIFTIN2 => cascade_ti, -- From Master
-        SHIFTIN3 => '1', -- Dummy input in Slave
-        SHIFTIN4 => '1', -- Dummy input in Slave
+        SHIFTIN3 => '1',        -- Dummy input in Slave
+        SHIFTIN4 => '1',        -- Dummy input in Slave
 
-        SHIFTOUT1 => open, -- Dummy output
-        SHIFTOUT2 => open, -- Dummy output
+        SHIFTOUT1 => open,       -- Dummy output
+        SHIFTOUT2 => open,       -- Dummy output
         SHIFTOUT3 => cascade_do, -- To Master
-        SHIFTOUT4 => cascade_to -- To Master
+        SHIFTOUT4 => cascade_to  -- To Master
     );
 
 end architecture;
