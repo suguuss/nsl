@@ -123,7 +123,7 @@ begin
 
         Q4 => parallel_s(4),
 
-        D       => serial_i,
+        D       => '0',
         BITSLIP => bitslip_i,
         IOCE    => serdes_strobe_i,
         SHIFTIN => cascade
