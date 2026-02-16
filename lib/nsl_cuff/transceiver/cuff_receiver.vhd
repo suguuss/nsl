@@ -35,6 +35,12 @@ begin
   iter: for i in 0 to lane_count_c-1
   generate
     signal delayed_s, delay_shift_s, delay_mark_s, slip_shift_s, slip_mark_s : std_ulogic;
+
+    attribute mark_debug : string;
+    attribute mark_debug of delay_shift_s : signal is "true";
+    attribute mark_debug of delay_mark_s  : signal is "true";
+    attribute mark_debug of slip_shift_s  : signal is "true";
+    attribute mark_debug of slip_mark_s   : signal is "true";
   begin
     with_aligner: if has_input_alignment_c
     generate

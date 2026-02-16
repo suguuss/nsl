@@ -70,7 +70,16 @@ architecture beh of lane_receiver is
   signal data_s: nsl_line_coding.ibm_8b10b.data_t;
   signal code_error_s, disparity_error_s: std_ulogic;
 
+  signal lane_state_debug_s : std_logic_vector(1 downto 0);
+
+  attribute mark_debug : string;
+  attribute mark_debug of code_error_s       : signal is "true";
+  attribute mark_debug of disparity_error_s  : signal is "true";
+  attribute mark_debug of lane_state_debug_s : signal is "true";
+
 begin
+
+  lane_state_debug_s <= std_logic_vector(to_unsigned(lane_state_t'pos(r.state), 2));
 
   regs: process(clock_i, reset_n_i) is
   begin
@@ -186,7 +195,7 @@ begin
 
   moore: process(r) is
   begin
-    if disparity_error_s = '0' and code_error_s = '0' and is_word_expected(data_s) then
+    if r.disparity_error = '0' and r.code_error = '0' and is_word_expected(r.data) then
       align_valid_o <= '1';
     else
       align_valid_o <= '0';

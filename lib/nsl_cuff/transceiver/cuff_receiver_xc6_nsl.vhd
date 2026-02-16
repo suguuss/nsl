@@ -68,12 +68,12 @@ begin
                 ready_o   => align_ready_o(i)
             );
 
-            -- xc6_delayer : input_delay_variable
-            delayer : nsl_io.delay.input_delay_variable
+            -- delayer : nsl_io.delay.input_delay_variable
+            xc6_delayer : input_delay_variable
             port map(
                 clock_i     => gearbox_clock_i,
                 reset_n_i   => reset_n_i,
-                -- bit_clock_i => bit_clock_i,
+                bit_clock_i => bit_clock_i,
                 mark_o      => delay_mark_s,
                 shift_i     => delay_shift_s,
                 data_i      => pad_i(i),
