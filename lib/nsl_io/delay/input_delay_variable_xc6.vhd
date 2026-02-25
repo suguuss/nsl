@@ -47,7 +47,7 @@ begin
 
   inst: unisim.vcomponents.iodelay2
     generic map(
-      data_rate => "SDR",
+      data_rate => "DDR",
       delay_src => "IDATAIN",
       idelay_type => "VARIABLE_FROM_ZERO",
       idelay_value => 0,
@@ -63,7 +63,7 @@ begin
       odatain => '0',
       idatain => data_i,
       inc => '0',
-      ioclk0 => clock_i,
+      ioclk0 => '0',
       ioclk1 => '0',
       dataout => data_o,
       rst => reset_s,
