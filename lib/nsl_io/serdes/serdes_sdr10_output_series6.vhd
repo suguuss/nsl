@@ -126,7 +126,7 @@ begin
         DATA_RATE_OQ => "SDR",
         DATA_RATE_OT => "SDR",
         SERDES_MODE  => "SLAVE",
-        OUTPUT_MODE  => "SINGLE_ENDED"
+        OUTPUT_MODE  => "DIFFERENTIAL"
     )
     port map(
         OQ     => open,
