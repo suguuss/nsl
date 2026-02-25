@@ -29,18 +29,7 @@ entity cuff_receiver is
 end entity;
 
 architecture xc6 of cuff_receiver is
-    component input_delay_variable is
-        port (
-            clock_i     : in  std_ulogic;
-            bit_clock_i : in  std_ulogic;
-            reset_n_i   : in  std_ulogic;
-            mark_o      : out std_ulogic;
-            shift_i     : in  std_ulogic;
 
-            data_i : in  std_ulogic;
-            data_o : out std_ulogic
-        );
-    end component;
 begin
 
     iter : for i in 0 to lane_count_c - 1
@@ -68,8 +57,7 @@ begin
                 ready_o   => align_ready_o(i)
             );
 
-            -- delayer : nsl_io.delay.input_delay_variable
-            xc6_delayer : input_delay_variable
+            xc6_delayer : nsl_io.delay.input_delay_variable_sdr
             port map(
                 clock_i     => gearbox_clock_i,
                 reset_n_i   => reset_n_i,
